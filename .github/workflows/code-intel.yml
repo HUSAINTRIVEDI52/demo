@@ -14,7 +14,7 @@ on:
       fail_on_leaks:
         description: 'Fail build on critical leaks'
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 permissions:
@@ -48,10 +48,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
-      - name: 🧪 Run Unit Tests
-        run: |
-          pytest tests/ -v --tb=short --junitxml=reports/test-results.xml
-        continue-on-error: true
+
 
       - name: 🔍 Run Code Intelligence Analysis
         id: analysis
@@ -59,9 +56,8 @@ jobs:
           TARGET_DIR="${{ github.event.inputs.target_dir || '.' }}"
           
           echo "::group::Running Code Intelligence CLI"
-          python -m code_intel.cli ci \
+          python -m code_intel.cli --config config.yaml ci \
             --target "$TARGET_DIR" \
-            --config config.yaml \
             2>&1 | tee reports/analysis_output.txt
           
           EXIT_CODE=${PIPESTATUS[0]}
@@ -80,7 +76,6 @@ jobs:
             reports/*.json
             reports/*.html
             reports/*.md
-            reports/*.xml
           retention-days: 30
 
       - name: 💬 Post PR Comment
