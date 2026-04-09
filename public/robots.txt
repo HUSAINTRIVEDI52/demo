@@ -1,0 +1,14 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow private routes
+Disallow: /app/
+Disallow: /admin/
+Disallow: /platform-admin/
+
+# Sitemap location
+Sitemap: https://makeportfolios.com/sitemap.xml
+
+# Crawl delay (optional, be gentle)
+Crawl-delay: 1

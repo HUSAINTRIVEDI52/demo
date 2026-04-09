@@ -1,0 +1,150 @@
+name: Code Usage Intelligence Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: 'Target directory to analyze'
+        required: false
+        default: '.'
+      fail_on_leaks:
+        description: 'Fail build on critical leaks'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  code-intelligence:
+    name: 🔍 Code Intelligence Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: 🧪 Run Unit Tests
+        run: |
+          pytest tests/ -v --tb=short --junitxml=reports/test-results.xml
+        continue-on-error: true
+
+      - name: 🔍 Run Code Intelligence Analysis
+        id: analysis
+        run: |
+          TARGET_DIR="${{ github.event.inputs.target_dir || '.' }}"
+          
+          echo "::group::Running Code Intelligence CLI"
+          python -m code_intel.cli ci \
+            --target "$TARGET_DIR" \
+            --config config.yaml \
+            2>&1 | tee reports/analysis_output.txt
+          
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+          
+          # Don't fail yet — let us upload artifacts first
+          echo "Analysis complete with exit code: $EXIT_CODE"
+
+      - name: 📊 Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-intelligence-reports
+          path: |
+            reports/*.json
+            reports/*.html
+            reports/*.md
+            reports/*.xml
+          retention-days: 30
+
+      - name: 💬 Post PR Comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const commentPath = 'reports/pr_comment.md';
+            
+            if (!fs.existsSync(commentPath)) {
+              console.log('No PR comment file found, skipping.');
+              return;
+            }
+            
+            const body = fs.readFileSync(commentPath, 'utf8');
+            
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(c => 
+              c.body.includes('Code Usage Intelligence Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
+
+      - name: ❌ Fail on Critical Issues
+        if: steps.analysis.outputs.exit_code != '0'
+        run: |
+          FAIL_ON_LEAKS="${{ github.event.inputs.fail_on_leaks || 'true' }}"
+          
+          if [ "$FAIL_ON_LEAKS" = "true" ]; then
+            echo "::error::Critical issues detected! See the Code Intelligence report for details."
+            exit 1
+          else
+            echo "::warning::Critical issues detected but build failure is disabled."
+          fi
+
+      - name: 📋 Job Summary
+        if: always()
+        run: |
+          echo "## 🔍 Code Intelligence Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f reports/pr_comment.md ]; then
+            cat reports/pr_comment.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No report generated. Check the analysis step for errors." >> $GITHUB_STEP_SUMMARY
+          fi
