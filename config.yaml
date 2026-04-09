@@ -1,59 +1,61 @@
-# Code Usage Intelligence System Configuration
-
-dead_code:
-  time_window_days: 30
-  exclude_patterns:
-    - "test_*"
-    - "__*__"
-    - "setup"
-    - "conftest"
-
-leak_detection:
-  severity_threshold: "HIGH"    # Fail CI on HIGH or CRITICAL findings
-  patterns:
-    credit_cards: true
-    emails: true
-    api_keys: true
-    ssn: true
-    jwt_tokens: true
-    phone_numbers: true
-  risky_logging:
-    enabled: true
-    patterns:
-      - "logging.*(user|password|secret|token|key|credit|ssn)"
-      - "print.*(user|password|secret|token|key|credit|ssn)"
-
-static_analysis:
-  target_dir: "."
-  exclude_dirs:
-    - "venv"
-    - ".venv"
-    - "node_modules"
-    - ".git"
-    - "__pycache__"
-    - ".tox"
-    - "dist"
-    - "build"
-    - ".eggs"
-  file_extensions:
-    - ".py"
-    - ".js"
-    - ".jsx"
-    - ".ts"
-    - ".tsx"
-
-reporting:
-  formats:
-    - "json"
-    - "html"
-  output_dir: "reports"
-
+---
 ci:
   fail_on_critical_leaks: true
   fail_on_high_leaks: false
-  max_dead_code_percentage: 30    # Warn if more than 30% code is dead
-
+  max_dead_code_percentage: 30
+dead_code:
+  exclude_patterns:
+    - test_*
+    - __*__
+    - setup
+    - conftest
+  time_window_days: 30
+leak_detection:
+  patterns:
+    api_keys: true
+    credit_cards: true
+    emails: true
+    jwt_tokens: true
+    phone_numbers: true
+    ssn: true
+  risky_logging:
+    enabled: true
+    patterns:
+      - logging.*(user|password|secret|token|key|credit|ssn)
+      - print.*(user|password|secret|token|key|credit|ssn)
+  severity_threshold: HIGH
+reporting:
+  formats:
+    - json
+    - html
+  output_dir: reports
 runtime:
-  storage_backend: "sqlite"       # "sqlite" for local/CI, "prometheus" for production
-  sqlite_path: "code_intel_metrics.db"
-  prometheus_url: "http://localhost:9090"
+  prometheus_url: http://localhost:9090
+  sqlite_path: code_intel_metrics.db
+  storage_backend: sqlite
+static_analysis:
+  exclude_dirs:
+    - venv
+    - .venv
+    - node_modules
+    - .git
+    - __pycache__
+    - .tox
+    - dist
+    - build
+    - .eggs
+    - tests
+    - test
+    - __tests__
+    - specs
+    - mocks
+    - mock
+    - fixtures
+    - coverage
+  file_extensions:
+    - .py
+    - .js
+    - .jsx
+    - .ts
+    - .tsx
+  target_dir: .# Code Usage Intelligence System Configuration
