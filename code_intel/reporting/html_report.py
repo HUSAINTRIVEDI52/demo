@@ -135,6 +135,31 @@ class HTMLReportGenerator:
   }}
   .container {{ max-width: 1400px; margin: 0 auto; padding: 2rem; }}
   
+  /* Navigation */
+  .nav-bar {{
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }}
+  .nav-bar a {{
+    text-decoration: none;
+    color: var(--accent);
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }}
+  .nav-bar a:hover {{
+    background: var(--surface-2);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }}
+
   /* Header */
   .header {{
     text-align: center;
@@ -262,6 +287,13 @@ class HTMLReportGenerator:
     <div class="status-badge {status_class}">{status_text}</div>
   </div>
 
+  <div class="nav-bar">
+    <a href="#dead-code">💀 Dead Code</a>
+    <a href="#unused-imports">📦 Unused Imports</a>
+    <a href="#leaks">🔐 Sensitive Data Leaks</a>
+    <a href="#unreachable-code">🚫 Unreachable Code</a>
+  </div>
+
   <div class="cards">
     <div class="card">
       <div class="card-value">{summary['total_functions']}</div>
@@ -290,7 +322,7 @@ class HTMLReportGenerator:
   </div>
 
   <!-- Dead Code -->
-  <div class="section">
+  <div class="section" id="dead-code">
     <div class="section-header">
       <h2>💀 Dead Code</h2>
       <span class="count">{summary['dead_code_count']} findings</span>
@@ -301,7 +333,7 @@ class HTMLReportGenerator:
   </div>
 
   <!-- Unused Imports -->
-  <div class="section">
+  <div class="section" id="unused-imports">
     <div class="section-header">
       <h2>📦 Unused Imports</h2>
       <span class="count">{summary['unused_imports_count']} findings</span>
@@ -312,7 +344,7 @@ class HTMLReportGenerator:
   </div>
 
   <!-- Leak Findings -->
-  <div class="section">
+  <div class="section" id="leaks">
     <div class="section-header">
       <h2>🔐 Sensitive Data Leaks</h2>
       <span class="count">{summary['total_leaks']} findings</span>
@@ -323,7 +355,7 @@ class HTMLReportGenerator:
   </div>
 
   <!-- Unreachable Code -->
-  <div class="section">
+  <div class="section" id="unreachable-code">
     <div class="section-header">
       <h2>🚫 Unreachable Code</h2>
       <span class="count">{summary['unreachable_code_count']} findings</span>
